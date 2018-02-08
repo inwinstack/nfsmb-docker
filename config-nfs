@@ -1,0 +1,28 @@
+#!/bin/bash
+
+logfile="/var/log/run_server.log"
+
+if [[ "$1" == "add" ]]; then
+    echo "Add new exports." >> $logfile
+    
+    if [[ -n "$2" ]] && [[ -n "$3" ]]; then
+    
+        new_export="$2 $3"
+        exist=`cat /etc/exports | grep "$2 "`
+        if [[ "${#exist}" == "0" ]]; then
+            echo ${new_export} >> /etc/exports
+            echo "- add ${new_export} to /etc/exports."
+        else
+            echo "- ${2} is in /etc/exports already."
+        fi
+    fi
+    
+elif [[ "$1" == "del" ]]; then
+    echo "Del old exports." >> $logfile
+    cat /etc/exports | grep -v "$2 " > /etc/exports
+else
+    cat /etc/exports
+fi
+
+
+

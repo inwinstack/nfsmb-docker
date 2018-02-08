@@ -1,0 +1,66 @@
+#!/bin/bash
+
+smbfile="/etc/samba/smb.conf"
+
+
+if [[ "$1" == "add" ]]; then
+    if [[ -n "$2" ]] && [[ -n "$3" ]]; then        
+
+        echo "[`date`] Add SAMBA share name = $2, share path = $3"
+        comment="    comment = $2 produced by config-smb"
+
+        exist=`cat ${smbfile} | grep "${comment}"`
+        if [[ "${#exist}" != "0" ]]; then
+            echo "- ${2} is exist"
+            exit 1
+        fi
+
+        share_name="[$2]"
+        share_path="    path = ${3}"
+        share_mode="    create mode = 0777"
+        share_directory_mode="    directory mode = 0777"
+        share_guest_ok="    guest ok = Yes"
+        share_guest_only="    guest only = Yes"
+        share_writable="    writable = Yes"
+        
+        share_opts=("$share_name" "$share_path" "$share_mode" "$share_directory_mode" "$share_guest_ok" "$share_guest_only" "$share_writable" "$comment")
+        echo "- add follow new section and options."
+        for ((i = 0; i < ${#share_opts[@]}; i++)); do
+            echo "${share_opts[$i]}" | tee -a ${smbfile}
+        done
+    else
+        echo " - missing share name and path. Eg.  ./config-smb add myshare /mnt/myshare"
+    fi
+
+elif [[  "$1" == "del" ]]; then
+    if [[ -n "$2" ]]; then
+        echo "[`date`] Del SAMBA share name = $2"
+        share_name="[$2]"
+        comment="    comment = $2 produced by config-smb"
+        start_section=0
+        while IFS='' read -r line || [[ -n "$line" ]]; do
+            if [[ "$line" == "$share_name" ]]; then
+                start_section="1"
+                continue
+            elif [[ "$line" == "$comment" ]]; then
+                start_section="0"
+                continue
+            fi
+            
+            if [[ "${start_section}" != "1" ]]; then
+                echo "$line" >> ${smbfile}.tmp
+            fi
+
+        done < "$smbfile"
+
+        mv ${smbfile}.tmp ${smbfile}
+
+    else
+        echo " - missing share name."
+    fi
+
+else
+    echo "[`date`] Get SAMBA config."
+    cat ${smbfile}
+fi
+

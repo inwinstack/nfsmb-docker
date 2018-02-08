@@ -1,0 +1,66 @@
+#!/bin/bash
+
+#/usr/sbin/init
+
+logfile="/var/log/run_server.log"
+
+
+
+if [[ "$1" == "restart" ]]; then
+    if [[ "${NFS_SERVER}" -eq "1" ]]; then
+        echo "[`date`] Restart NFS server." | tee -a ${logfile}
+        systemctl stop nfs.service
+        systemctl start nfs.service
+    fi
+    if [[ "${SMB_SERVER}" -eq "1" ]]; then
+        echo "[`date`] Restart SMB server." | tee -a ${logfile}
+        systemctl stop smb.service nmb.service
+        systemctl start smb.service nmb.service
+    fi
+    exit 0
+elif [[ "$1" == "status" ]]; then
+        systemctl status nfs.service
+        systemctl status smb.service nmb.service
+    exit 0
+elif [[ "$1" == "stop" ]]; then
+    if [[ "${NFS_SERVER}" -eq "1" ]]; then
+        echo "[`date`] Stop NFS server." | tee -a ${logfile}
+        systemctl stop nfs.service 
+    fi
+    if [[ "${SMB_SERVER}" -eq "1" ]]; then
+        echo "[`date`] Stop SMB server." | tee -a ${logfile}
+        systemctl stop smb.service nmb.service
+    fi
+    exit 0
+fi
+
+# ------------------------------------------------------------
+
+if [[ "${NFS_SERVER}" -eq "1" ]]; then
+    echo "[`date`] Enable NFS server." | tee -a ${logfile}
+    systemctl enable nfs.service
+    systemctl start nfs.service
+else
+    echo "[`date`] Disable NFS server." | tee -a ${logfile}
+    systemctl stop nfs.service
+    systemctl disable nfs.service
+fi
+
+
+if [[ "${SMB_SERVER}" -eq "1" ]]; then
+    echo "[`date`] Enable SMB server." | tee -a ${logfile}
+    systemctl enable smb.service nmb.service
+    systemctl start smb.service nmb.service
+else
+    echo "[`date`] Disable SMB server."| tee -a ${logfile}
+    systemctl stop smb.service nmb.service
+    systemctl disable smb.service nmb.service
+fi
+
+
+
+# keep this script running
+#while true; do
+#    date    
+#    sleep 3600
+#done

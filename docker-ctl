@@ -1,0 +1,76 @@
+#!/bin/bash
+#set -euxo pipefail
+set -o pipefail
+
+image="centos7-nfs-smb"
+tag="1.0"
+name="my-server"
+
+
+if [[ "${1}" == "build" ]]; then
+    echo "Build image"
+    sleep 1
+
+    docker build --rm -t ${image}:${tag} .
+    docker images
+
+elif [[ ${1} == "rmi" ]]; then
+    echo "Remove image"
+    
+    docker images | grep "${image}" | grep "${tag}" | awk '{print $3}' | xargs docker rmi 
+    docker images
+
+elif [[ ${1} == "run" ]]; then
+    echo "Run docker"
+    
+    volume_bind=""
+    for i in "${@:3}"; do
+        echo "- volume bind to docker: ${i}"
+        volume_bind="${volume_bind} -v ${i} "
+    done
+    echo "all volumes: ${volume_bind}"
+
+    if [[ "${2}" == "nfs" ]]; then
+        echo " - run docker as nfs server"
+        docker run -d --restart always -p 2049:2049/tcp -v /sys/fs/cgroup:/sys/fs/cgroup:ro ${volume_bind} -e SMB_SERVER='0' --name ${name} --privileged ${image}:${tag}
+    elif [[ "${2}" == "smb" ]]; then
+        echo " - run docker as smb server"
+        docker run -d --restart always -p 137:137/udp -p 138:138/udp -p 139:139 -p 445:445 -v /sys/fs/cgroup:/sys/fs/cgroup:ro ${volume_bind} -e NFS_SERVER='0' --name ${name} --privileged ${image}:${tag}
+    elif [[ "${2}" == "nfsmb" ]]; then
+        echo " - run docker as both nfs and smb server"
+        docker run -d --restart always -p 2049:2049/tcp -p 137:137/udp -p 138:138/udp -p 139:139 -p 445:445 -v /sys/fs/cgroup:/sys/fs/cgroup:ro ${volume_bind} --name ${name} --privileged ${image}:${tag}
+    else
+        echo "Please specify one of service name in second argument to run. 'nfs', 'smb' or 'nfsmb' for run both nfs and smb server"
+        exit 1
+    fi
+
+    docker ps -a
+
+
+elif [[ ${1} == "stop" ]]; then
+    echo "Stop and delete docker ${name}"
+
+    docker ps -a | grep "${name}" | awk '{print $1}' | xargs docker stop
+    docker ps -a | grep "${name}" | awk '{print $1}' | xargs docker rm
+    docker ps -a
+
+
+elif [[ ${1} == "exec" ]]; then
+    exec_cmd=""
+    for i in "${@:2}"; do
+        exec_cmd="${exec_cmd}${i} "
+    done
+    echo "Exec '${exec_cmd}' in docker"
+
+    container_id=`docker ps -a | grep "${name}" | awk '{print $1}'`
+    docker exec -ti ${container_id} ${exec_cmd}
+
+elif [[ ${1} == "status" ]]; then
+    docker ps -a | grep "${name}\|CONTAINER\ ID"
+elif [[ ${1} == "import" ]]; then
+    echo "Import docker image"
+    cat ${2} | docker import - ${image}:${tag}
+else
+    echo "Missing argument, 'build', 'rmi', 'run', 'stop' or 'exec'."
+    exit 1
+fi

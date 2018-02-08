@@ -1,0 +1,1 @@
+/mnt *(rw,fsid=1,nohide,insecure,async,no_subtree_check,no_root_squash)
