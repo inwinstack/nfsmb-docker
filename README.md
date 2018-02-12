@@ -1,5 +1,7 @@
-**Build Tool-kit 工具指令**
+[![Docker Build](https://img.shields.io/docker/build/inwinstack/nfsmb-docker.svg)](https://hub.docker.com/r/inwinstack/nfsmb-docker/)
+# NFS & SAMBA Docker Tool-kit
 
+## Build Tool-kit 工具指令
 NFS&SAMBA Docker Tool-kit 目錄下的 docker-ctl 提供以下功能，自動化build/run/stop/exec操作指令。
 - 建立 CcentOS7 的 NFS 與 SAMBA Docker Image
 - 刪除 Docker Image
